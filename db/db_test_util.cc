@@ -751,7 +751,7 @@ void DBTestBase::Destroy(const Options& options, bool delete_cf_paths) {
     for (int r = 0; r < 10; ++r) {
       // The existance is not propagated atomically in S3, so wait until
       // IDENTITY file no longer exists.
-      if (aenv->FileExists(dbname_ + "/IDENTITY").ok()) {
+      if (aenv->FileExists(dbname_ + "\\IDENTITY").ok()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10 * (r + 1)));
         continue;
       }

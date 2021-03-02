@@ -53,6 +53,7 @@
 
 #ifdef _WIN32_WINNT
 #undef GetMessage
+#undef GetObject
 #endif
 
 namespace ROCKSDB_NAMESPACE {
@@ -301,7 +302,7 @@ class S3ReadableFile : public CloudStorageReadableFileImpl {
     // set up S3 request to read this range
     Aws::S3::Model::GetObjectRequest request;
     request.SetBucket(ToAwsString(bucket_));
-    request.SetKey(ToAwsString(fname_));
+    request.SetKey(ToAwsString(pathtoName(std::string(fname_))));
     request.SetRange(range);
 
     Aws::S3::Model::GetObjectOutcome outcome =
@@ -564,7 +565,7 @@ Status S3StorageProvider::DeleteCloudObject(const std::string& bucket_name,
   Aws::S3::Model::DeleteObjectRequest request;
   request.SetBucket(ToAwsString(bucket_name));
   request.SetKey(ToAwsString(
-      object_path));  // The filename is the object name in the bucket
+      pathtoName(std::string(object_path))));  // The filename is the object name in the bucket
 
   Aws::S3::Model::DeleteObjectOutcome outcome =
       s3client_->DeleteCloudObject(request);
@@ -597,7 +598,7 @@ Status S3StorageProvider::ListCloudObjects(const std::string& bucket_name,
   auto prefix = ltrim_if(object_path, '/');
   // S3 paths better end with '/', otherwise we might also get a list of files
   // in a directory for which our path is a prefix
-  prefix = ensure_ends_with_pathsep(std::move(prefix));
+  // prefix = ensure_ends_with_pathsep(std::move(prefix));
   // the starting object marker
   Aws::String marker;
   bool loop = true;
@@ -609,7 +610,7 @@ Status S3StorageProvider::ListCloudObjects(const std::string& bucket_name,
     request.SetMaxKeys(
         env_->GetCloudEnvOptions().number_objects_listed_in_one_iteration);
 
-    request.SetPrefix(ToAwsString(prefix));
+    request.SetPrefix(/*ToAwsString(pathtoName(std::string(prefix)))*/ToAwsString(prefix));
     request.SetMarker(marker);
 
     Aws::S3::Model::ListObjectsOutcome outcome =
@@ -695,7 +696,7 @@ Status S3StorageProvider::PutCloudObjectMetadata(
     aws_metadata[ToAwsString(m.first)] = ToAwsString(m.second);
   }
   request.SetBucket(ToAwsString(bucket_name));
-  request.SetKey(ToAwsString(object_path));
+  request.SetKey(ToAwsString(pathtoName(std::string(object_path))));
   request.SetMetadata(aws_metadata);
   SetEncryptionParameters(env_->GetCloudEnvOptions(), request);
 
@@ -738,7 +739,7 @@ Status S3StorageProvider::HeadObject(
     uint64_t* modtime, std::string* etag) {
   Aws::S3::Model::HeadObjectRequest request;
   request.SetBucket(ToAwsString(bucket_name));
-  request.SetKey(ToAwsString(object_path));
+  request.SetKey(ToAwsString(pathtoName(std::string(object_path))));
 
   auto outcome = s3client_->HeadObject(request);
   bool isSuccess = outcome.IsSuccess();
@@ -813,9 +814,10 @@ Status S3StorageProvider::DoGetCloudObject(const std::string& bucket_name,
                                            const std::string& object_path,
                                            const std::string& destination,
                                            uint64_t* remote_size) {
+  std::string object_path_ = pathtoName(std::string(object_path));
   if (s3client_->HasTransferManager()) {
     auto handle = s3client_->DownloadFile(ToAwsString(bucket_name),
-                                          ToAwsString(object_path),
+                                          ToAwsString(object_path_),
                                           ToAwsString(destination));
     bool success =
         handle->GetStatus() == Aws::Transfer::TransferStatus::COMPLETED;
@@ -835,7 +837,7 @@ Status S3StorageProvider::DoGetCloudObject(const std::string& bucket_name,
   } else {
     Aws::S3::Model::GetObjectRequest request;
     request.SetBucket(ToAwsString(bucket_name));
-    request.SetKey(ToAwsString(object_path));
+    request.SetKey(ToAwsString(pathtoName(std::string(object_path))));
 
     request.SetResponseStreamFactory([destination]() {
       return Aws::New<Aws::FStream>(Aws::Utils::ARRAY_ALLOCATION_TAG,
@@ -863,9 +865,11 @@ Status S3StorageProvider::DoPutCloudObject(const std::string& local_file,
                                            const std::string& bucket_name,
                                            const std::string& object_path,
                                            uint64_t file_size) {
+
+  std::string object_path_ = pathtoName(std::string(object_path));
   if (s3client_->HasTransferManager()) {
     auto handle = s3client_->UploadFile(ToAwsString(bucket_name),
-                                        ToAwsString(object_path),
+                                        ToAwsString(object_path_),
                                         ToAwsString(local_file), file_size);
     if (handle->GetStatus() != Aws::Transfer::TransferStatus::COMPLETED) {
       auto error = handle->GetLastError();
@@ -882,7 +886,7 @@ Status S3StorageProvider::DoPutCloudObject(const std::string& local_file,
 
     Aws::S3::Model::PutObjectRequest putRequest;
     putRequest.SetBucket(ToAwsString(bucket_name));
-    putRequest.SetKey(ToAwsString(object_path));
+    putRequest.SetKey(ToAwsString(pathtoName(std::string(object_path))));
     putRequest.SetBody(inputData);
     SetEncryptionParameters(env_->GetCloudEnvOptions(), putRequest);
 

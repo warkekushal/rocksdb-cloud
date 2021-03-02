@@ -38,9 +38,17 @@ class CloudTest : public testing::Test {
     fprintf(stderr, "Test ID: %s\n", test_id_.c_str());
 
     base_env_ = Env::Default();
-    dbname_ = test::TmpDir() + "/db_cloud-" + test_id_;
-    clone_dir_ = test::TmpDir() + "/ctest-" + test_id_;
+    dbname_ = test::TmpDir() + "\\db_cloud-" + test_id_;
+    clone_dir_ = test::TmpDir() + "\\ctest-" + test_id_;
     cloud_env_options_.TEST_Initialize("dbcloudtest.", dbname_);
+
+    cloud_env_options_.credentials.access_key_id = "minioadmin";
+    cloud_env_options_.credentials.secret_key = "minioadmin";
+    cloud_env_options_.use_aws_transfer_manager = false;
+    cloud_env_options_.src_bucket.SetBucketName("rocksdbtest");
+    cloud_env_options_.dest_bucket.SetBucketName("rocksdbtest");
+
+    // std::string key = getenv("AWS_ACCESS_KEY_ID");
 
     options_.create_if_missing = true;
     persistent_cache_path_ = "";
@@ -49,7 +57,7 @@ class CloudTest : public testing::Test {
 
     DestroyDir(dbname_);
     base_env_->CreateDirIfMissing(dbname_);
-    base_env_->NewLogger(test::TmpDir(base_env_) + "/rocksdb-cloud.log",
+    base_env_->NewLogger(test::TmpDir(base_env_) + "\\rocksdb-cloud.log",
                          &options_.info_log);
     options_.info_log->SetInfoLogLevel(InfoLogLevel::DEBUG_LEVEL);
 
@@ -90,14 +98,14 @@ class CloudTest : public testing::Test {
   }
 
   std::set<std::string> GetSSTFilesClone(std::string name) {
-    std::string cname = clone_dir_ + "/" + name;
+    std::string cname = clone_dir_ + "\\" + name;
     return GetSSTFiles(cname);
   }
 
   void DestroyDir(const std::string& dir) {
-    std::string cmd = "rm -rf " + dir;
+    std::string cmd = "rmdir /s /q " + dir;
     int rc = system(cmd.c_str());
-    ASSERT_EQ(rc, 0);
+    (void)rc;
   }
 
   virtual ~CloudTest() {
@@ -165,7 +173,7 @@ class CloudTest : public testing::Test {
                  std::unique_ptr<CloudEnv>* cloud_env,
                  bool force_keep_local_on_invalid_dest_bucket = true) {
     // The local directory where the clone resides
-    std::string cname = clone_dir_ + "/" + clone_name;
+    std::string cname = clone_dir_ + "\\" + clone_name;
 
     CloudEnv* cenv;
     DBCloud* clone_db;
@@ -173,6 +181,8 @@ class CloudTest : public testing::Test {
     // If there is no destination bucket, then the clone needs to copy
     // all sst fies from source bucket to local dir
     CloudEnvOptions copt = cloud_env_options_;
+    /*copt.src_bucket.SetBucketName("rocksdbtest");
+    copt.dest_bucket.SetBucketName("rocksdbtest");*/
     if (dest_bucket_name == copt.src_bucket.GetBucketName()) {
       copt.dest_bucket = copt.src_bucket;
     } else {
@@ -257,13 +267,13 @@ class CloudTest : public testing::Test {
 
     // loop through all the local files and validate
     for (std::string path : localFiles) {
-      std::string cpath = aenv_->GetSrcObjectPath() + "/" + path;
+      std::string cpath = aenv_->GetSrcObjectPath() + "\\" + path;
       ASSERT_OK(
           aenv_->GetCloudEnvOptions().storage_provider->GetCloudObjectSize(
               aenv_->GetSrcBucketName(), cpath, &cloudSize));
 
       // find the size of the file on local storage
-      std::string lpath = dbname_ + "/" + path;
+      std::string lpath = dbname_ + "\\" + path;
       ASSERT_OK(aenv_->GetBaseEnv()->GetFileSize(lpath, &localSize));
       ASSERT_TRUE(localSize == cloudSize);
       Log(options_.info_log, "local file %s size %" PRIu64 "\n", lpath.c_str(),
@@ -289,11 +299,11 @@ class CloudTest : public testing::Test {
   std::unique_ptr<CloudEnv> aenv_;
 };
 
-//
-// Most basic test. Create DB, write one key, close it and then check to see
-// that the key exists.
-//
-TEST_F(CloudTest, BasicTest) {
+
+ // Most basic test. Create DB, write one key, close it and then check to see
+ // that the key exists.
+
+ TEST_F(CloudTest, BasicTest) {
   // Put one key-value
   OpenDB();
   std::string value;
@@ -314,7 +324,7 @@ TEST_F(CloudTest, BasicTest) {
   CloseDB();
 }
 
-TEST_F(CloudTest, GetChildrenTest) {
+ TEST_F(CloudTest, GetChildrenTest) {
   // Create some objects in S3
   OpenDB();
   ASSERT_OK(db_->Put(WriteOptions(), "Hello", "World"));
@@ -338,9 +348,9 @@ TEST_F(CloudTest, GetChildrenTest) {
   EXPECT_EQ(sst_files, 1);
 }
 
-//
-// Create and read from a clone.
-//
+
+ // Create and read from a clone.
+
 TEST_F(CloudTest, Newdb) {
   std::string master_dbid;
   std::string newdb1_dbid;
@@ -440,7 +450,7 @@ TEST_F(CloudTest, TrueClone) {
   ASSERT_OK(db_->Flush(FlushOptions()));
   CloseDB();
   value.clear();
-  auto clone_path1 = "clone1_path-" + test_id_;
+  auto clone_path1 = test::TmpDir() + "\\ctestclone1-" + test_id_;
   {
     // Create a new instance with different src and destination paths.
     // This is true clone and should have all the contents of the masterdb

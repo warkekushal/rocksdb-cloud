@@ -9,6 +9,7 @@
 #include "cloud/cloud_scheduler.h"
 #include "cloud/filename.h"
 #include "cloud/manifest_reader.h"
+#include "cloud/aws/aws_file.h"
 #include "env/composite_env_wrapper.h"
 #include "file/file_util.h"
 #include "file/filename.h"
@@ -104,7 +105,9 @@ Status CloudEnvImpl::ListCloudObjects(const std::string& path,
   // Fetch the list of children from both cloud buckets
   if (HasSrcBucket()) {
     st = cloud_env_options.storage_provider->ListCloudObjects(
-        GetSrcBucketName(), GetSrcObjectPath(), result);
+        GetSrcBucketName(),
+        pathtoName(std::string(GetSrcObjectPath())) /*GetSrcObjectPath()*/,
+        result);
     if (!st.ok()) {
       Log(InfoLogLevel::ERROR_LEVEL, info_log_,
           "[%s] GetChildren src bucket %s %s error from %s %s", Name(),
@@ -414,18 +417,33 @@ Status CloudEnvImpl::GetChildren(const std::string& path,
     result->push_back(value);
   }
 
-  // Remove all results that are not supposed to be visible.
-  result->erase(
-      std::remove_if(result->begin(), result->end(),
-                     [&](const std::string& f) {
-                       auto noepoch = RemoveEpoch(f);
-                       if (!IsSstFile(noepoch) && !IsManifestFile(noepoch)) {
-                         return false;
-                       }
-                       return RemapFilename(noepoch) != f;
-                     }),
-      result->end());
-  // Remove the epoch, remap into RocksDB's domain
+  //for (auto it = result->begin(); it!= result->end(); it++) {
+  //  std::string s = *it;
+  //  auto noepoch = RemoveEpoch(s);
+  //  bool issst = IsSstFile(noepoch);
+  //  bool ismanifest = IsManifestFile(noepoch);
+  //  if (!issst && !ismanifest) {
+  //    //result->erase(it);
+  //    continue;
+  //  }
+  //  std::string remap = RemapFilename(noepoch);
+  //  if (remap == s) {
+  //    continue;
+  //  }
+  //  result->erase(it);
+  //}
+   //Remove all results that are not supposed to be visible.
+  //result->erase(
+  //    std::remove_if(result->begin(), result->end(),
+  //                   [&](const std::string& f) {
+  //                     auto noepoch = RemoveEpoch(f);
+  //                     if (!IsSstFile(noepoch) && !IsManifestFile(noepoch)) {
+  //                       return false;
+  //                     }
+  //                     return RemapFilename(noepoch) != f;
+  //                   }),
+  //    result->end());
+   //Remove the epoch, remap into RocksDB's domain
   for (size_t i = 0; i < result->size(); ++i) {
     auto noepoch = RemoveEpoch(result->at(i));
     if (IsSstFile(noepoch) || IsManifestFile(noepoch)) {
@@ -879,7 +897,7 @@ std::string CloudEnvImpl::RemapFilename(const std::string& logical_path) const {
       return logical_path;
   };
   auto dir = dirname(logical_path);
-  return dir + (dir.empty() ? "" : "/") + file_name +
+  return dir + (dir.empty() ? "" : "\\") + file_name +
          (epoch.empty() ? "" : ("-" + epoch.ToString()));
 }
 
@@ -933,7 +951,7 @@ void CloudEnvImpl::TEST_InitEmptyCloudManifest() {
 Status CloudEnvImpl::CreateNewIdentityFile(const std::string& dbid,
                                            const std::string& local_name) {
   const EnvOptions soptions;
-  auto tmp_identity_path = local_name + "/IDENTITY.tmp";
+  auto tmp_identity_path = local_name + "\\IDENTITY.tmp";
   Env* env = GetBaseEnv();
   Status st;
   {
@@ -959,7 +977,7 @@ Status CloudEnvImpl::CreateNewIdentityFile(const std::string& dbid,
       tmp_identity_path.c_str(), st.ToString().c_str());
 
   // Rename ID file on local filesystem and upload it to dest bucket too
-  st = RenameFile(tmp_identity_path, local_name + "/IDENTITY");
+  st = RenameFile(tmp_identity_path, local_name + "\\IDENTITY");
   if (!st.ok()) {
     Log(InfoLogLevel::ERROR_LEVEL, info_log_,
         "[cloud_env_impl] Unable to rename newly created IDENTITY.tmp "
@@ -1029,7 +1047,7 @@ std::string CloudEnvImpl::srcname(const std::string& localname) {
 //
 std::string CloudEnvImpl::destname(const std::string& localname) {
   assert(cloud_env_options.dest_bucket.IsValid());
-  return cloud_env_options.dest_bucket.GetObjectPath() + "/" +
+  return cloud_env_options.dest_bucket.GetObjectPath() + "\\" +
          basename(localname);
 }
 
@@ -1346,7 +1364,7 @@ Status CloudEnvImpl::GetCloudDbid(const std::string& local_dir,
   // Read dbid from src bucket if it exists
   if (HasSrcBucket()) {
     Status st = cloud_env_options.storage_provider->GetCloudObject(
-        GetSrcBucketName(), GetSrcObjectPath() + "/IDENTITY", tmpfile);
+        GetSrcBucketName(), GetSrcObjectPath() + "\\IDENTITY", tmpfile);
     if (!st.ok() && !st.IsNotFound()) {
       return st;
     }
@@ -1369,7 +1387,7 @@ Status CloudEnvImpl::GetCloudDbid(const std::string& local_dir,
   // Read dbid from dest bucket if it exists
   if (HasDestBucket()) {
     Status st = cloud_env_options.storage_provider->GetCloudObject(
-        GetDestBucketName(), GetDestObjectPath() + "/IDENTITY", tmpfile);
+        GetDestBucketName(), GetDestObjectPath() + "\\IDENTITY", tmpfile);
     if (!st.ok() && !st.IsNotFound()) {
       return st;
     }
@@ -1416,7 +1434,7 @@ Status CloudEnvImpl::MaybeMigrateManifestFile(const std::string& local_dbname) {
   // download MANIFEST file from the cloud, which might not be what we want do
   // to (especially for databases which don't have a destination bucket
   // specified). This piece of code can be removed post-migration.
-  manifest_filename = local_dbname + "/" + rtrim_if(manifest_filename, '\n');
+  manifest_filename = local_dbname + "\\" + rtrim_if(manifest_filename, '\n');
   if (local_env->FileExists(manifest_filename).IsNotFound()) {
     // manifest doesn't exist, shrug
     Log(InfoLogLevel::INFO_LEVEL, info_log_,
@@ -1424,7 +1442,7 @@ Status CloudEnvImpl::MaybeMigrateManifestFile(const std::string& local_dbname) {
         manifest_filename.c_str());
     return Status::OK();
   }
-  return local_env->RenameFile(manifest_filename, local_dbname + "/MANIFEST");
+  return local_env->RenameFile(manifest_filename, local_dbname + "\\MANIFEST");
 }
 
 Status CloudEnvImpl::PreloadCloudManifest(const std::string& local_dbname) {
@@ -1560,7 +1578,7 @@ Status CloudEnvImpl::SanitizeDirectory(const DBOptions& options,
     if (file.name.find("LOG") == 0) {  // keep LOG files
       continue;
     }
-    std::string pathname = local_name + "/" + file.name;
+    std::string pathname = local_name + "\\" + file.name;
     st = env->DeleteFile(pathname);
     if (!st.ok()) {
       return st;
@@ -1740,7 +1758,7 @@ Status CloudEnvImpl::RollNewEpoch(const std::string& local_dbname) {
   // MANIFEST-<current_epoch> (unless st.IsNotFound()).
   uint64_t maxFileNumber;
   auto st = ManifestReader::GetMaxFileNumberFromManifest(
-      this, local_dbname + "/MANIFEST-000001", &maxFileNumber);
+      this, local_dbname + "\\MANIFEST-000001", &maxFileNumber);
   if (st.IsNotFound()) {
     // This is a new database!
     maxFileNumber = 0;

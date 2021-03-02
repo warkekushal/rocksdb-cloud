@@ -119,7 +119,9 @@ Status AwsCloudOptions::GetClientConfiguration(
     config->requestTimeoutMs = cloud_env_options.request_timeout_ms;
   }
 
-  config->region = ToAwsString(region);
+  config->region = "";
+  config->scheme = Aws::Http::Scheme::HTTP;
+  config->endpointOverride = Aws::String("http://127.0.0.1:9000");
   return Status::OK();
 }
 #else

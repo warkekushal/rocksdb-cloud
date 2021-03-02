@@ -32,14 +32,14 @@ inline std::string& trim(std::string& s) { return ltrim(rtrim(s)); }
 
 // Extract basename from a full pathname
 inline std::string basename(std::string const& pathname) {
-  auto pos = pathname.rfind('/');
+  auto pos = pathname.rfind('\\');
   if (pos == std::string::npos) {
     return pathname;
   }
   return pathname.substr(pos + 1);
 }
 inline std::string dirname(std::string const& pathname) {
-  auto pos = pathname.rfind('/');
+  auto pos = pathname.rfind('\\');
   if (pos == std::string::npos) {
     return "";
   }
@@ -49,8 +49,8 @@ inline std::string dirname(std::string const& pathname) {
 // If s doesn't end with '/', it appends it.
 // Special case: if s is empty, we don't append '/'
 inline std::string ensure_ends_with_pathsep(std::string s) {
-  if (!s.empty() && s.back() != '/') {
-    s += '/';
+  if (!s.empty() && s.back() != '\\') {
+    s += '\\';
   }
   return s;
 }
@@ -79,13 +79,13 @@ inline bool ends_with(std::string const& value, std::string const& ending) {
 }
 
 inline std::string CloudManifestFile(const std::string& dbname) {
-  return dbname + "/CLOUDMANIFEST";
+  return dbname + "\\CLOUDMANIFEST";
 }
 
 inline std::string ManifestFileWithEpoch(const std::string& dbname,
                                          const std::string& epoch) {
-  return epoch.empty() ? (dbname + "/MANIFEST")
-                       : (dbname + "/MANIFEST-" + epoch);
+  return epoch.empty() ? (dbname + "\\MANIFEST")
+                       : (dbname + "\\MANIFEST-" + epoch);
 }
 
 inline std::string RemoveEpoch(const std::string& path) {
@@ -93,7 +93,7 @@ inline std::string RemoveEpoch(const std::string& path) {
   if (lastDash == std::string::npos) {
     return path;
   }
-  auto lastPathPos = path.rfind('/');
+  auto lastPathPos = path.rfind('\\');
   if (lastPathPos == std::string::npos || lastDash > lastPathPos) {
     return path.substr(0, lastDash);
   }
@@ -101,7 +101,7 @@ inline std::string RemoveEpoch(const std::string& path) {
 }
 
 // pathaname seperator
-const std::string pathsep = "/";
+const std::string pathsep = "\\";
 
 // types of rocksdb files
 const std::string sst = ".sst";
@@ -110,33 +110,44 @@ const std::string log = ".log";
 
 // Is this a sst file, i.e. ends in ".sst" or ".ldb"
 inline bool IsSstFile(const std::string& pathname) {
+  bool result;
   if (pathname.size() < sst.size()) {
-    return false;
+    result = false;
   }
-  const char* ptr = pathname.c_str() + pathname.size() - sst.size();
+  /*const char* ptr = pathname.c_str() + pathname.size() - sst.size();
   if ((memcmp(ptr, sst.c_str(), sst.size()) == 0) ||
       (memcmp(ptr, ldb.c_str(), ldb.size()) == 0)) {
     return true;
   }
-  return false;
+  return false;*/
+  else {
+    result = ends_with(pathname, sst) || ends_with(pathname, ldb);
+  }
+  return result;
 }
 
 // A log file has ".log" suffix
 inline bool IsWalFile(const std::string& pathname) {
+  bool result;
   if (pathname.size() < log.size()) {
-    return false;
+    result = false;
   }
-  const char* ptr = pathname.c_str() + pathname.size() - log.size();
+  /*const char* ptr = pathname.c_str() + pathname.size() - log.size();
   if (memcmp(ptr, log.c_str(), log.size()) == 0) {
     return true;
   }
-  return false;
+  return false;*/
+  else {
+    result = ends_with(pathname,log);
+  }
+  return result;
+  
 }
 
 inline bool IsManifestFile(const std::string& pathname) {
   // extract last component of the path
-  std::string fname;
-  size_t offset = pathname.find_last_of(pathsep);
+  /*std::string fname;
+  size_t offset = pathname.find("\\");
   if (offset != std::string::npos) {
     fname = pathname.substr(offset + 1, pathname.size());
   } else {
@@ -145,12 +156,14 @@ inline bool IsManifestFile(const std::string& pathname) {
   if (fname.find("MANIFEST") == 0) {
     return true;
   }
-  return false;
+  return false;*/
+  bool result = ends_with(pathname, "MANIFEST");
+  return result;
 }
 
 inline bool IsIdentityFile(const std::string& pathname) {
   // extract last component of the path
-  std::string fname;
+  /*std::string fname;
   size_t offset = pathname.find_last_of(pathsep);
   if (offset != std::string::npos) {
     fname = pathname.substr(offset + 1, pathname.size());
@@ -160,7 +173,9 @@ inline bool IsIdentityFile(const std::string& pathname) {
   if (fname.find("IDENTITY") == 0) {
     return true;
   }
-  return false;
+  return false;*/
+  bool result = ends_with(pathname, "IDENTITY");
+  return result;
 }
 
 // A log file has ".log" suffix

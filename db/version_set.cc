@@ -4453,8 +4453,8 @@ Status VersionSet::GetCurrentManifestPath(const std::string& dbname,
     return Status::Corruption("CURRENT file corrupted");
   }
   *manifest_path = dbname;
-  if (dbname.back() != '/') {
-    manifest_path->push_back('/');
+  if (dbname.back() != '\\') {
+    manifest_path->push_back('\\');
   }
   manifest_path->append(fname);
   return Status::OK();

@@ -33,13 +33,36 @@
 # 4. make -j
 
 cmake_minimum_required(VERSION 3.5.1)
-
+add_definitions(-DUSE_AWS=1)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/modules/")
 include(ReadVersion)
 get_rocksdb_version(rocksdb_VERSION)
 project(rocksdb
   VERSION ${rocksdb_VERSION}
   LANGUAGES CXX C ASM)
+
+set(AWS_SDK_PATH "E:/thirdparty/aws-sdk-cpp/build")
+set(AWS_CSTREAM_PATH "E:/thirdparty/aws-sdk-cpp/build/.deps/install/lib/aws-c-event-stream/cmake")
+set(AWS_CCOMMON_PATH "E:/thirdparty/aws-sdk-cpp/build/.deps/install/lib/aws-c-common/cmake")
+set(AWS_CHECKSUMS_PATH "E:/thirdparty/aws-sdk-cpp/build/.deps/install/lib/aws-checksums/cmake")
+
+set(aws-sdk-cpp_DIR ${AWS_SDK_PATH})
+set(aws-c-event-stream_DIR ${AWS_CSTREAM_PATH})
+set(aws-c-common_DIR ${AWS_CCOMMON_PATH})
+set(aws-checksums_DIR ${AWS_CHECKSUMS_PATH})
+
+
+include_directories(E:/thirdparty/aws-sdk-cpp/aws-cpp-sdk-core/include)
+include_directories(E:/thirdparty/aws-sdk-cpp/aws-cpp-sdk-s3/include)
+include_directories(E:/thirdparty/aws-sdk-cpp/aws-cpp-sdk-transfer/include)
+include_directories(E:/thirdparty/aws-sdk-cpp/aws-cpp-sdk-kinesis/include)
+include_directories(E:/thirdparty/vcpkg/installed/x64-windows/include)
+
+find_package(aws-sdk-cpp)
+link_libraries(aws-cpp-sdk-core)
+link_libraries(aws-cpp-sdk-s3)
+link_libraries(aws-cpp-sdk-transfer)
+link_libraries(aws-cpp-sdk-kinesis)
 
 if(POLICY CMP0042)
   cmake_policy(SET CMP0042 NEW)
@@ -304,13 +327,15 @@ if(HAVE_THREAD_LOCAL)
   add_definitions(-DROCKSDB_SUPPORT_THREAD_LOCAL)
 endif()
 
-option(FAIL_ON_WARNINGS "Treat compile warnings as errors" ON)
+option(FAIL_ON_WARNINGS "Treat compile warnings as errors" OFF)
 if(FAIL_ON_WARNINGS)
   if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
   else() # assume GCC
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
   endif()
+else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX-")
 endif()
 
 option(WITH_ASAN "build with ASAN" OFF)
@@ -778,6 +803,22 @@ set(SOURCES
         utilities/ttl/db_ttl_impl.cc
         utilities/write_batch_with_index/write_batch_with_index.cc
         utilities/write_batch_with_index/write_batch_with_index_internal.cc
+	cloud/aws/aws_env.cc
+	cloud/aws/aws_kafka.cc
+	cloud/aws/aws_kinesis.cc
+	cloud/aws/aws_retry.cc
+	cloud/aws/aws_s3.cc
+	cloud/db_cloud_impl.cc
+	cloud/cloud_env.cc
+	cloud/cloud_env_impl.cc
+	cloud/cloud_env_options.cc
+	cloud/cloud_log_controller.cc
+	cloud/manifest_reader.cc
+	cloud/purge.cc
+	cloud/cloud_manifest.cc
+	cloud/cloud_scheduler.cc
+	cloud/cloud_storage_provider.cc
+	db/db_impl/db_impl_remote_compaction.cc
         $<TARGET_OBJECTS:build_version>)
 
 if(HAVE_SSE42 AND NOT MSVC)
@@ -1140,6 +1181,9 @@ if(WITH_TESTS)
         utilities/transactions/write_unprepared_transaction_test.cc
         utilities/ttl/ttl_test.cc
         utilities/write_batch_with_index/write_batch_with_index_test.cc
+		cloud/db_cloud_test.cc
+		cloud/cloud_manifest_test.cc
+		cloud/cloud_scheduler_test.cc
   )
   if(WITH_LIBRADOS)
     list(APPEND TESTS utilities/env_librados_test.cc)

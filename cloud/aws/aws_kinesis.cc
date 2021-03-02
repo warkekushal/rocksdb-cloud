@@ -32,6 +32,8 @@
 #include <aws/kinesis/model/Record.h>
 #include <aws/kinesis/model/ShardIteratorType.h>
 #include <aws/kinesis/model/StreamDescription.h>
+
+#undef GetMessage
 namespace ROCKSDB_NAMESPACE {
 namespace cloud {
 namespace kinesis {

@@ -1,11 +1,9 @@
 // Copyright (c) 2017 Rockset.
 #ifndef ROCKSDB_LITE
 
-#ifndef _WIN32_WINNT
-#include <unistd.h>
-#else
+
 #include <windows.h>
-#endif
+
 
 #include "cloud/aws/aws_env.h"
 #include "cloud/cloud_env_impl.h"

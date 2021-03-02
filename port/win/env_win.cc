@@ -292,7 +292,7 @@ Status WinEnvIO::OpenWritableFile(const std::string& fname,
   // Read/Write
   // However, MapViewOfFile specifies only Write only
   DWORD desired_access = GENERIC_WRITE;
-  DWORD shared_mode = FILE_SHARE_READ;
+  DWORD shared_mode = FILE_SHARE_READ | FILE_SHARE_DELETE;
 
   if (local_options.use_mmap_writes) {
     desired_access |= GENERIC_READ;

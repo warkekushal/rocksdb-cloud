@@ -92,7 +92,7 @@ class AwsEnv : public CloudEnvImpl {
                   const std::shared_ptr<Logger>& info_log = nullptr);
 
   // The pathname that contains a list of all db's inside a bucket.
-  static constexpr const char* dbid_registry_ = "/.rockset/dbid/";
+  static constexpr const char* dbid_registry_ = "rockset\\dbid\\";
 
   Random64 rng_;
 };

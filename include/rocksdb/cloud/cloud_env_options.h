@@ -8,6 +8,7 @@
 #include "rocksdb/env.h"
 #include "rocksdb/status.h"
 
+
 namespace Aws {
 namespace Auth {
 class AWSCredentialsProvider;
@@ -470,6 +471,7 @@ class CloudEnv : public Env {
   static Status NewAwsEnv(Env* base_env, const CloudEnvOptions& env_options,
                           const std::shared_ptr<Logger>& logger,
                           CloudEnv** cenv);
+
 };
 
 }  // namespace ROCKSDB_NAMESPACE

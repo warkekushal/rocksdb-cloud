@@ -16,6 +16,7 @@
 #include "rocksdb/env.h"
 #include "rocksdb/options.h"
 #include "rocksdb/status.h"
+#include <ctime>
 
 namespace ROCKSDB_NAMESPACE {
 
@@ -202,8 +203,8 @@ Status CloudEnvImpl::extractParents(const std::string& bucket_name_prefix,
   Status st;
   for (auto iter = dbid_list.begin(); iter != dbid_list.end(); ++iter) {
     // download IDENTITY
-    std::string cloudfile = iter->second + "/IDENTITY";
-    std::string localfile = scratch + "/.rockset_IDENTITY." + random;
+    std::string cloudfile = iter->second + "\\IDENTITY";
+    std::string localfile = scratch + "\\.rockset_IDENTITY." + random;
     st = GetCloudEnvOptions().storage_provider->GetCloudObject(
         bucket_name_prefix, cloudfile, localfile);
     if (!st.ok() && !st.IsNotFound()) {

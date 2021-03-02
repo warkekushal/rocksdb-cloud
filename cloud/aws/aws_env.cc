@@ -333,6 +333,8 @@ Status AwsEnv::NewAwsEnv(Env* base_env, const CloudEnvOptions& cloud_options,
   // These lines of code are likely temporary until the new configuration stuff
   // comes into play.
   CloudEnvOptions options = cloud_options;  // Make a copy
+  /*options.src_bucket.SetBucketName("rocksdbtest");
+  options.dest_bucket.SetBucketName("rocksdbtest");*/
   status =
       CloudStorageProviderImpl::CreateS3Provider(&options.storage_provider);
   if (status.ok() && !cloud_options.keep_local_log_files) {

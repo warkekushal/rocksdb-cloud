@@ -331,6 +331,7 @@ Status CloudStorageProviderImpl::GetCloudObject(
   }
 
   if (s.ok()) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     s = localenv->RenameFile(tmp_destination, local_destination);
   }
   Log(InfoLogLevel::INFO_LEVEL, env_->info_log_,

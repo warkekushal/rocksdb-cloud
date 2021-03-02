@@ -389,7 +389,7 @@ Status DBImpl::Recover(
           // Found MANIFEST (descriptor log), thus best-efforts recovery does
           // not have to treat the db as empty.
           s = Status::OK();
-          manifest_path = dbname_ + "/" + file;
+          manifest_path = dbname_ + "\\" + file;
           break;
         }
       }
@@ -1627,7 +1627,7 @@ Status DBImpl::Open(const DBOptions& db_options, const std::string& dbname,
     std::unordered_map<std::string, uint64_t> known_file_sizes;
     for (const auto& md : metadata) {
       std::string name = md.name;
-      if (!name.empty() && name[0] == '/') {
+      if (!name.empty() && name[0] == '\\') {
         name = name.substr(1);
       }
       known_file_sizes[name] = md.size;
@@ -1649,7 +1649,7 @@ Status DBImpl::Open(const DBOptions& db_options, const std::string& dbname,
       for (auto& file_name : existing_files) {
         uint64_t file_number;
         FileType file_type;
-        std::string file_path = path + "/" + file_name;
+        std::string file_path = path + "\\" + file_name;
         if (ParseFileName(file_name, &file_number, &file_type) &&
             file_type == kTableFile) {
           if (known_file_sizes.count(file_name)) {

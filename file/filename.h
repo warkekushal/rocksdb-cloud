@@ -22,6 +22,7 @@
 #include "rocksdb/slice.h"
 #include "rocksdb/status.h"
 #include "rocksdb/transaction_log.h"
+#include <cctype>
 
 namespace ROCKSDB_NAMESPACE {
 

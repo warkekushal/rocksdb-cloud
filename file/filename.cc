@@ -66,7 +66,7 @@ static std::string MakeFileName(uint64_t number, const char* suffix) {
 
 static std::string MakeFileName(const std::string& name, uint64_t number,
                                 const char* suffix) {
-  return name + "/" + MakeFileName(number, suffix);
+  return name + "\\" + MakeFileName(number, suffix);
 }
 
 std::string LogFileName(const std::string& name, uint64_t number) {
@@ -92,16 +92,16 @@ std::string BlobFileName(const std::string& blobdirname, uint64_t number) {
 std::string BlobFileName(const std::string& dbname, const std::string& blob_dir,
                          uint64_t number) {
   assert(number > 0);
-  return MakeFileName(dbname + "/" + blob_dir, number,
+  return MakeFileName(dbname + "\\" + blob_dir, number,
                       kRocksDBBlobFileExt.c_str());
 }
 
 std::string ArchivalDirectory(const std::string& dir) {
-  return dir + "/" + ARCHIVAL_DIR;
+  return dir + "\\" + ARCHIVAL_DIR;
 }
 std::string ArchivedLogFileName(const std::string& name, uint64_t number) {
   assert(number > 0);
-  return MakeFileName(name + "/" + ARCHIVAL_DIR, number, "log");
+  return MakeFileName(name + "" + ARCHIVAL_DIR, number, "log");
 }
 
 std::string MakeTableFileName(const std::string& path, uint64_t number) {
@@ -159,17 +159,17 @@ void FormatFileNumber(uint64_t number, uint32_t path_id, char* out_buf,
 std::string DescriptorFileName(const std::string& dbname, uint64_t number) {
   assert(number > 0);
   char buf[100];
-  snprintf(buf, sizeof(buf), "/MANIFEST-%06llu",
+  snprintf(buf, sizeof(buf), "\\MANIFEST-%06llu",
            static_cast<unsigned long long>(number));
   return dbname + buf;
 }
 
 std::string CurrentFileName(const std::string& dbname) {
-  return dbname + "/CURRENT";
+  return dbname + "\\CURRENT";
 }
 
 std::string LockFileName(const std::string& dbname) {
-  return dbname + "/LOCK";
+  return dbname + "\\LOCK";
 }
 
 std::string TempFileName(const std::string& dbname, uint64_t number) {
@@ -192,11 +192,11 @@ InfoLogPrefix::InfoLogPrefix(bool has_log_dir,
 std::string InfoLogFileName(const std::string& dbname,
     const std::string& db_path, const std::string& log_dir) {
   if (log_dir.empty()) {
-    return dbname + "/LOG";
+    return dbname + "\\LOG";
   }
 
   InfoLogPrefix info_log_prefix(true, db_path);
-  return log_dir + "/" + info_log_prefix.buf;
+  return log_dir + "\\" + info_log_prefix.buf;
 }
 
 // Return the name of the old info log file for "dbname".
@@ -206,18 +206,18 @@ std::string OldInfoLogFileName(const std::string& dbname, uint64_t ts,
   snprintf(buf, sizeof(buf), "%llu", static_cast<unsigned long long>(ts));
 
   if (log_dir.empty()) {
-    return dbname + "/LOG.old." + buf;
+    return dbname + "\\LOG.old." + buf;
   }
 
   InfoLogPrefix info_log_prefix(true, db_path);
-  return log_dir + "/" + info_log_prefix.buf + ".old." + buf;
+  return log_dir + "\\" + info_log_prefix.buf + ".old." + buf;
 }
 
 std::string OptionsFileName(const std::string& dbname, uint64_t file_num) {
   char buffer[256];
   snprintf(buffer, sizeof(buffer), "%s%06" PRIu64,
            kOptionsFileNamePrefix.c_str(), file_num);
-  return dbname + "/" + buffer;
+  return dbname + "\\" + buffer;
 }
 
 std::string TempOptionsFileName(const std::string& dbname, uint64_t file_num) {
@@ -225,18 +225,18 @@ std::string TempOptionsFileName(const std::string& dbname, uint64_t file_num) {
   snprintf(buffer, sizeof(buffer), "%s%06" PRIu64 ".%s",
            kOptionsFileNamePrefix.c_str(), file_num,
            kTempFileNameSuffix.c_str());
-  return dbname + "/" + buffer;
+  return dbname + "\\" + buffer;
 }
 
 std::string MetaDatabaseName(const std::string& dbname, uint64_t number) {
   char buf[100];
-  snprintf(buf, sizeof(buf), "/METADB-%llu",
+  snprintf(buf, sizeof(buf), "\\METADB-%llu",
            static_cast<unsigned long long>(number));
   return dbname + buf;
 }
 
 std::string IdentityFileName(const std::string& dbname) {
-  return dbname + "/IDENTITY";
+  return dbname + "\\IDENTITY";
 }
 
 // Owned filenames have the form:
@@ -262,7 +262,7 @@ bool ParseFileName(const std::string& fname, uint64_t* number,
                    const Slice& info_log_name_prefix, FileType* type,
                    WalFileType* log_type) {
   Slice rest(fname);
-  if (fname.length() > 1 && fname[0] == '/') {
+  if (fname.length() > 1 && fname[0] == '\\') {
     rest.remove_prefix(1);
   }
   if (rest == "IDENTITY") {
@@ -379,7 +379,7 @@ IOStatus SetCurrentFile(FileSystem* fs, const std::string& dbname,
   // Remove leading "dbname/" and add newline to manifest file name
   std::string manifest = DescriptorFileName(dbname, descriptor_number);
   Slice contents = manifest;
-  assert(contents.starts_with(dbname + "/"));
+  //assert(contents.starts_with(dbname + "/"));
   contents.remove_prefix(dbname.size() + 1);
   std::string tmp = TempFileName(dbname, descriptor_number);
   IOStatus s = WriteStringToFile(fs, contents.ToString() + "\n", tmp, true);
